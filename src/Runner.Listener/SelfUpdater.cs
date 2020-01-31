@@ -62,6 +62,13 @@ namespace GitHub.Runner.Listener
 
                 Trace.Info($"An update is available.");
 
+                // disable self-updates
+                var rustAvoidUnreachableCodeError = true;
+                if (rustAvoidUnreachableCodeError) {
+                    Trace.Info("prevented self-update");
+                    return false;
+                }
+
                 // Print console line that warn user not shutdown runner.
                 await UpdateRunnerUpdateStateAsync("Runner update in progress, do not shutdown runner.");
                 await UpdateRunnerUpdateStateAsync($"Downloading {_targetPackage.Version} runner", $"RunnerPlatform: {_targetPackage.Platform}");
