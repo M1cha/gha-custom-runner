@@ -56,6 +56,9 @@ namespace GitHub.Runner.Common
         [DataMember(EmitDefaultValue = false)]
         public string ServerUrlV2 { get; set; }
 
+        [DataMember(EmitDefaultValue = false)]
+        public string WorkerBinary { get; set; }
+
         [IgnoreDataMember]
         public bool IsHostedServer
         {
