@@ -43,6 +43,7 @@ namespace GitHub.Runner.Listener
 
         IConfigurationStore _configurationStore;
 
+        private string _workerBinary;
         RunnerSettings _runnerSettings;
         private static readonly string _workerProcessName = $"Runner.Worker{IOUtil.ExeExtension}";
 
@@ -66,6 +67,7 @@ namespace GitHub.Runner.Listener
             _configurationStore = hostContext.GetService<IConfigurationStore>();
             _runnerSettings = _configurationStore.GetSettings();
             _poolId = _runnerSettings.PoolId;
+            _workerBinary = _runnerSettings.WorkerBinary;
 
             int channelTimeoutSeconds;
             if (!int.TryParse(Environment.GetEnvironmentVariable("GITHUB_ACTIONS_RUNNER_CHANNEL_TIMEOUT") ?? string.Empty, out channelTimeoutSeconds))
@@ -442,6 +444,9 @@ namespace GitHub.Runner.Listener
                                 HostContext.WritePerfCounter("StartingWorkerProcess");
                                 var assemblyDirectory = HostContext.GetDirectory(WellKnownDirectory.Bin);
                                 string workerFileName = Path.Combine(assemblyDirectory, _workerProcessName);
+                                if (!String.IsNullOrEmpty(_workerBinary)) {
+                                    workerFileName = _workerBinary;
+                                }
                                 workerProcessTask = processInvoker.ExecuteAsync(
                                     workingDirectory: assemblyDirectory,
                                     fileName: workerFileName,
