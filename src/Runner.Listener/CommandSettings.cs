@@ -52,7 +52,8 @@ namespace GitHub.Runner.Listener
             Constants.Runner.CommandLine.Args.UserName,
             Constants.Runner.CommandLine.Args.WindowsLogonAccount,
             Constants.Runner.CommandLine.Args.WindowsLogonPassword,
-            Constants.Runner.CommandLine.Args.Work
+            Constants.Runner.CommandLine.Args.Work,
+            Constants.Runner.CommandLine.Args.WorkerBinary
         };
 
         // Commands.
@@ -273,6 +274,11 @@ namespace GitHub.Runner.Listener
         public string GetMonitorSocketAddress()
         {
             return GetArg(Constants.Runner.CommandLine.Args.MonitorSocketAddress);
+        }
+
+        public string GetWorkerBinary()
+        {
+            return GetArg(Constants.Runner.CommandLine.Args.WorkerBinary);
         }
 
         // This is used to find out the source from where the Runner.Listener.exe was launched at the time of run
