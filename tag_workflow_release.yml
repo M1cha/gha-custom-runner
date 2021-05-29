@@ -1,0 +1,97 @@
+name: release
+
+on: push
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Print versions
+      run: |
+        echo "RELEASE: $(cat releaseVersion)"
+        echo "REF: ${{ github.ref }}"
+
+    - name: Check version
+      run: test "refs/tags/v$(cat releaseVersion)" == "${{ github.ref }}"
+
+  build:
+    needs: check
+    outputs:
+      linux-arm64-sha: ${{ steps.sha.outputs.linux-arm64-sha256 }}
+    strategy:
+      matrix:
+        runtime: [ linux-arm64 ]
+        include:
+        - runtime: linux-arm64
+          os: ubuntu-latest
+          devScript: ./dev.sh
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v1
+
+    # Build runner layout
+    - name: Build & Layout Release
+      run: |
+        ${{ matrix.devScript }} layout Release ${{ matrix.runtime }}
+      working-directory: src
+
+    # Run tests
+    - name: L0
+      run: |
+        ${{ matrix.devScript }} test
+      working-directory: src
+      if: matrix.runtime != 'linux-arm64' && matrix.runtime != 'linux-arm'
+
+    # Create runner package tar.gz/zip
+    - name: Package Release
+      if: github.event_name != 'pull_request'
+      run: |
+        ${{ matrix.devScript }} package Release ${{ matrix.runtime }}
+      working-directory: src
+
+    # Upload runner package tar.gz/zip as artifact.
+    # Since each package name is unique, so we don't need to put ${{matrix}} info into artifact name
+    - name: Publish Artifact
+      if: github.event_name != 'pull_request'
+      uses: actions/upload-artifact@v1
+      with:
+        name: runner-packages
+        path: _package
+    # compute shas and set as job outputs to use in release notes
+    - run: brew install coreutils #needed for shasum util
+      if: ${{ matrix.os == 'macOS-latest' }}
+      name: Install Dependencies for SHA Calculation (osx)
+    - run: |
+        file=$(ls)
+        sha=$(sha256sum $file | awk '{ print $1 }')
+        echo "Computed sha256: $sha for $file"
+        echo "::set-output name=${{matrix.runtime}}-sha256::$sha"
+      shell: bash
+      id: sha
+      name: Compute SHA256
+      working-directory: _package
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    # Download runner package tar.gz/zip produced by 'build' job
+    - name: Download Artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: runner-packages
+        path: ./packages
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: packages/*
+        body: "automatically generated release"

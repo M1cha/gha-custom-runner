@@ -1,0 +1,128 @@
+From 8bf7734b6e15411f6d395d46fbd6be2590bb61f3 Mon Sep 17 00:00:00 2001
+From: Michael Zimmermann <sigmaepsilon92@gmail.com>
+Date: Wed, 26 May 2021 22:30:40 +0200
+Subject: [PATCH 1/2] add support for workerBinary configuration
+
+With self-hosted runners all jobs usually have full access to the runner
+directory. You can put the runner in a VM or container and use `--once` to
+restart with a clean environment after each job but that doesn't prevent jobs
+from doing either of the following:
+- access runner secrets like `.credentials_rsaparams` to then take over the
+  runner
+- modify the listener to nuke `--once` and manipulate future jobs.
+
+To fix that issue I'm running `Runner.Listener` in the host environment while
+running `Runner.Worker` in a VM or container.
+That is easily possible because the only way of communication between the two
+are unnamed pipes which can easily be forwarded into another environment.
+
+In my specific setup I set the config `workerBinary` to an absolute path outside
+of the runner installation. That binary then starts a qemu VM, forwards the
+pipes into it, places a copy of the runner installation into the VM and starts
+`Runner.Worker` with the forwarded pipes as the arguments.
+---
+ src/Runner.Common/ConfigurationStore.cs                   | 3 +++
+ src/Runner.Common/Constants.cs                            | 1 +
+ src/Runner.Listener/CommandSettings.cs                    | 8 +++++++-
+ src/Runner.Listener/Configuration/ConfigurationManager.cs | 2 ++
+ src/Runner.Listener/JobDispatcher.cs                      | 5 +++++
+ 5 files changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/src/Runner.Common/ConfigurationStore.cs b/src/Runner.Common/ConfigurationStore.cs
+index 0ae2704..fd22064 100644
+--- a/src/Runner.Common/ConfigurationStore.cs
++++ b/src/Runner.Common/ConfigurationStore.cs
+@@ -45,6 +45,9 @@ namespace GitHub.Runner.Common
+         [DataMember(EmitDefaultValue = false)]
+         public string MonitorSocketAddress { get; set; }
+ 
++        [DataMember(EmitDefaultValue = false)]
++        public string WorkerBinary { get; set; }
++
+         [IgnoreDataMember]
+         public bool IsHostedServer
+         {
+diff --git a/src/Runner.Common/Constants.cs b/src/Runner.Common/Constants.cs
+index e820725..129400c 100644
+--- a/src/Runner.Common/Constants.cs
++++ b/src/Runner.Common/Constants.cs
+@@ -96,6 +96,7 @@ namespace GitHub.Runner.Common
+                     public static readonly string UserName = "username";
+                     public static readonly string WindowsLogonAccount = "windowslogonaccount";
+                     public static readonly string Work = "work";
++                    public static readonly string WorkerBinary = "workerbinary";
+ 
+                     // Secret args. Must be added to the "Secrets" getter as well.
+                     public static readonly string Token = "token";
+diff --git a/src/Runner.Listener/CommandSettings.cs b/src/Runner.Listener/CommandSettings.cs
+index 9b3aecd..cf337ed 100644
+--- a/src/Runner.Listener/CommandSettings.cs
++++ b/src/Runner.Listener/CommandSettings.cs
+@@ -51,7 +51,8 @@ namespace GitHub.Runner.Listener
+             Constants.Runner.CommandLine.Args.UserName,
+             Constants.Runner.CommandLine.Args.WindowsLogonAccount,
+             Constants.Runner.CommandLine.Args.WindowsLogonPassword,
+-            Constants.Runner.CommandLine.Args.Work
++            Constants.Runner.CommandLine.Args.Work,
++            Constants.Runner.CommandLine.Args.WorkerBinary
+         };
+ 
+         // Commands.
+@@ -272,6 +273,11 @@ namespace GitHub.Runner.Listener
+             return GetArg(Constants.Runner.CommandLine.Args.MonitorSocketAddress);
+         }
+ 
++        public string GetWorkerBinary()
++        {
++            return GetArg(Constants.Runner.CommandLine.Args.WorkerBinary);
++        }
++
+         // This is used to find out the source from where the Runner.Listener.exe was launched at the time of run
+         public string GetStartupType()
+         {
+diff --git a/src/Runner.Listener/Configuration/ConfigurationManager.cs b/src/Runner.Listener/Configuration/ConfigurationManager.cs
+index 8d08b06..e530f2f 100644
+--- a/src/Runner.Listener/Configuration/ConfigurationManager.cs
++++ b/src/Runner.Listener/Configuration/ConfigurationManager.cs
+@@ -304,6 +304,8 @@ namespace GitHub.Runner.Listener.Configuration
+ 
+             runnerSettings.MonitorSocketAddress = command.GetMonitorSocketAddress();
+ 
++            runnerSettings.WorkerBinary = command.GetWorkerBinary();
++
+             _store.SaveSettings(runnerSettings);
+ 
+             _term.WriteLine();
+diff --git a/src/Runner.Listener/JobDispatcher.cs b/src/Runner.Listener/JobDispatcher.cs
+index f019032..7fa09f1 100644
+--- a/src/Runner.Listener/JobDispatcher.cs
++++ b/src/Runner.Listener/JobDispatcher.cs
+@@ -36,6 +36,7 @@ namespace GitHub.Runner.Listener
+     {
+         private readonly Lazy<Dictionary<long, TaskResult>> _localRunJobResult = new Lazy<Dictionary<long, TaskResult>>();
+         private int _poolId;
++        private string _workerBinary;
+         RunnerSettings _runnerSetting;
+         private static readonly string _workerProcessName = $"Runner.Worker{IOUtil.ExeExtension}";
+ 
+@@ -57,6 +58,7 @@ namespace GitHub.Runner.Listener
+             var configurationStore = hostContext.GetService<IConfigurationStore>();
+             _runnerSetting = configurationStore.GetSettings();
+             _poolId = _runnerSetting.PoolId;
++            _workerBinary = _runnerSetting.WorkerBinary;
+ 
+             int channelTimeoutSeconds;
+             if (!int.TryParse(Environment.GetEnvironmentVariable("GITHUB_ACTIONS_RUNNER_CHANNEL_TIMEOUT") ?? string.Empty, out channelTimeoutSeconds))
+@@ -426,6 +428,9 @@ namespace GitHub.Runner.Listener
+                                 HostContext.WritePerfCounter("StartingWorkerProcess");
+                                 var assemblyDirectory = HostContext.GetDirectory(WellKnownDirectory.Bin);
+                                 string workerFileName = Path.Combine(assemblyDirectory, _workerProcessName);
++                                if (!String.IsNullOrEmpty(_workerBinary)) {
++                                    workerFileName = _workerBinary;
++                                }
+                                 workerProcessTask = processInvoker.ExecuteAsync(
+                                     workingDirectory: assemblyDirectory,
+                                     fileName: workerFileName,
+-- 
+2.31.1
+

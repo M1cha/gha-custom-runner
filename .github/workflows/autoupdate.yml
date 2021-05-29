@@ -1,0 +1,53 @@
+name: autoupdate
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 0 * * *'
+
+jobs:
+  autoupdate:
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Import SSH private key
+      run: |
+        mkdir -p ~/.ssh
+        echo '${{ secrets.DEPLOY_KEY }}' >  ~/.ssh/id_rsa
+        chmod 0600 ~/.ssh/id_rsa
+
+    - name: check for new version
+      id: check
+      run: |
+        latest=$(curl https://api.github.com/repos/actions/runner/releases/latest | jq -r .name)
+        current=$(curl https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r .name)
+
+        if [ "$latest" == "$current" ];then
+            echo "::set-output name=newversion::"
+        else
+            echo "::set-output name=newversion::$latest"
+        fi
+
+    - name: create new version
+      if: steps.check.outputs.newversion != ''
+      run: |
+        version="${{ steps.check.outputs.newversion }}"
+
+        git clone https://github.com/actions/runner.git -b "$version"
+        cd runner
+
+        git config --global user.email "action@github.com"
+        git config --global user.name "GitHub Action"
+
+        rm -rf .github
+        mkdir -p .github/workflows
+        cp ../tag_workflow_release.yml .github/workflows/release.yml
+        git add .github
+        git commit -m 'replace .github'
+
+        git am ../0001-add-support-for-workerBinary-configuration.patch
+        git am ../0002-Runner.Listener-prevent-self-updates.patch
+
+        git push git@github.com:${{ github.repository }}.git "HEAD:refs/tags/$version"
