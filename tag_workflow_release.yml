@@ -22,8 +22,12 @@ jobs:
       linux-arm64-sha: ${{ steps.sha.outputs.linux-arm64-sha256 }}
     strategy:
       matrix:
-        runtime: [ linux-arm64 ]
+        runtime: [ linux-x64, linux-arm64 ]
         include:
+        - runtime: linux-x64
+          os: ubuntu-latest
+          devScript: ./dev.sh
+
         - runtime: linux-arm64
           os: ubuntu-latest
           devScript: ./dev.sh
