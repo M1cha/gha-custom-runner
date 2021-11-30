@@ -1,7 +1,7 @@
-From 3a830230b1cf8d0b6e7c799939ccf9852aafbbac Mon Sep 17 00:00:00 2001
+From a4fab10f5f0a71e743d1cdd5ecf59ab2629316f0 Mon Sep 17 00:00:00 2001
 From: Michael Zimmermann <sigmaepsilon92@gmail.com>
 Date: Wed, 26 May 2021 22:30:40 +0200
-Subject: [PATCH] add support for workerBinary configuration
+Subject: [PATCH 1/2] add support for workerBinary configuration
 
 With self-hosted runners all jobs usually have full access to the runner
 directory. You can put the runner in a VM or container and use `--once` to
@@ -43,10 +43,10 @@ index 9423073..68037af 100644
          public bool IsHostedServer
          {
 diff --git a/src/Runner.Common/Constants.cs b/src/Runner.Common/Constants.cs
-index 05b9392..ff6f023 100644
+index c43aae1..fb04644 100644
 --- a/src/Runner.Common/Constants.cs
 +++ b/src/Runner.Common/Constants.cs
-@@ -98,6 +98,7 @@ namespace GitHub.Runner.Common
+@@ -99,6 +99,7 @@ namespace GitHub.Runner.Common
                      public static readonly string UserName = "username";
                      public static readonly string WindowsLogonAccount = "windowslogonaccount";
                      public static readonly string Work = "work";
@@ -55,10 +55,10 @@ index 05b9392..ff6f023 100644
                      // Secret args. Must be added to the "Secrets" getter as well.
                      public static readonly string Token = "token";
 diff --git a/src/Runner.Listener/CommandSettings.cs b/src/Runner.Listener/CommandSettings.cs
-index b5e1c1a..3a66f20 100644
+index da0d301..acc5e5b 100644
 --- a/src/Runner.Listener/CommandSettings.cs
 +++ b/src/Runner.Listener/CommandSettings.cs
-@@ -51,7 +51,8 @@ namespace GitHub.Runner.Listener
+@@ -52,7 +52,8 @@ namespace GitHub.Runner.Listener
              Constants.Runner.CommandLine.Args.UserName,
              Constants.Runner.CommandLine.Args.WindowsLogonAccount,
              Constants.Runner.CommandLine.Args.WindowsLogonPassword,
@@ -68,7 +68,7 @@ index b5e1c1a..3a66f20 100644
          };
  
          // Commands.
-@@ -274,6 +275,11 @@ namespace GitHub.Runner.Listener
+@@ -275,6 +276,11 @@ namespace GitHub.Runner.Listener
              return GetArg(Constants.Runner.CommandLine.Args.MonitorSocketAddress);
          }
  
@@ -81,7 +81,7 @@ index b5e1c1a..3a66f20 100644
          public string GetStartupType()
          {
 diff --git a/src/Runner.Listener/Configuration/ConfigurationManager.cs b/src/Runner.Listener/Configuration/ConfigurationManager.cs
-index 73c93ce..21068af 100644
+index db6e84f..2e855ff 100644
 --- a/src/Runner.Listener/Configuration/ConfigurationManager.cs
 +++ b/src/Runner.Listener/Configuration/ConfigurationManager.cs
 @@ -307,6 +307,8 @@ namespace GitHub.Runner.Listener.Configuration
@@ -124,5 +124,5 @@ index 6d003d0..468231d 100644
                                      workingDirectory: assemblyDirectory,
                                      fileName: workerFileName,
 -- 
-2.32.0
+2.34.1
 

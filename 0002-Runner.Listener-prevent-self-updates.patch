@@ -1,4 +1,4 @@
-From 586638064830c64e353a00176182e056c0b459e7 Mon Sep 17 00:00:00 2001
+From 59904b284e3e537fd3350e43b528b5098abb9df0 Mon Sep 17 00:00:00 2001
 From: Pietro Albini <pietro@pietroalbini.org>
 Date: Fri, 31 Jan 2020 11:02:34 +0100
 Subject: [PATCH 2/2] Runner.Listener: prevent self-updates
@@ -10,10 +10,10 @@ enough.
  1 file changed, 7 insertions(+)
 
 diff --git a/src/Runner.Listener/SelfUpdater.cs b/src/Runner.Listener/SelfUpdater.cs
-index 92ed0ce..89bfec3 100644
+index 7b74a5d..0b13df9 100644
 --- a/src/Runner.Listener/SelfUpdater.cs
 +++ b/src/Runner.Listener/SelfUpdater.cs
-@@ -61,6 +61,13 @@ namespace GitHub.Runner.Listener
+@@ -62,6 +62,13 @@ namespace GitHub.Runner.Listener
  
                  Trace.Info($"An update is available.");
  
@@ -26,7 +26,7 @@ index 92ed0ce..89bfec3 100644
 +
                  // Print console line that warn user not shutdown runner.
                  await UpdateRunnerUpdateStateAsync("Runner update in progress, do not shutdown runner.");
-                 await UpdateRunnerUpdateStateAsync($"Downloading {_targetPackage.Version} runner");
+                 await UpdateRunnerUpdateStateAsync($"Downloading {_targetPackage.Version} runner", $"RunnerPlatform: {_targetPackage.Platform}");
 -- 
-2.31.1
+2.34.1
 
