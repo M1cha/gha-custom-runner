@@ -1,4 +1,4 @@
-From a4fab10f5f0a71e743d1cdd5ecf59ab2629316f0 Mon Sep 17 00:00:00 2001
+From 0f733a8aa3a07b5dcd4744f45454261c3d35045c Mon Sep 17 00:00:00 2001
 From: Michael Zimmermann <sigmaepsilon92@gmail.com>
 Date: Wed, 26 May 2021 22:30:40 +0200
 Subject: [PATCH 1/2] add support for workerBinary configuration
@@ -55,7 +55,7 @@ index c43aae1..fb04644 100644
                      // Secret args. Must be added to the "Secrets" getter as well.
                      public static readonly string Token = "token";
 diff --git a/src/Runner.Listener/CommandSettings.cs b/src/Runner.Listener/CommandSettings.cs
-index da0d301..acc5e5b 100644
+index 0501145..eea8428 100644
 --- a/src/Runner.Listener/CommandSettings.cs
 +++ b/src/Runner.Listener/CommandSettings.cs
 @@ -52,7 +52,8 @@ namespace GitHub.Runner.Listener
@@ -68,7 +68,7 @@ index da0d301..acc5e5b 100644
          };
  
          // Commands.
-@@ -275,6 +276,11 @@ namespace GitHub.Runner.Listener
+@@ -276,6 +277,11 @@ namespace GitHub.Runner.Listener
              return GetArg(Constants.Runner.CommandLine.Args.MonitorSocketAddress);
          }
  

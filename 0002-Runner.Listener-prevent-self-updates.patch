@@ -1,21 +1,25 @@
-From 59904b284e3e537fd3350e43b528b5098abb9df0 Mon Sep 17 00:00:00 2001
+From 3cd6e1c799aac9a095ff30a6af77240ccfc7eb39 Mon Sep 17 00:00:00 2001
 From: Pietro Albini <pietro@pietroalbini.org>
 Date: Fri, 31 Jan 2020 11:02:34 +0100
 Subject: [PATCH 2/2] Runner.Listener: prevent self-updates
 
 There is surely a better way to do this, but hey, this hack might be
 enough.
+
+This also removes SelfUpdater tests because they would fail.
 ---
- src/Runner.Listener/SelfUpdater.cs | 7 +++++++
- 1 file changed, 7 insertions(+)
+ src/Runner.Listener/SelfUpdater.cs    |   7 +
+ src/Test/L0/Listener/SelfUpdaterL0.cs | 178 --------------------------
+ 2 files changed, 7 insertions(+), 178 deletions(-)
+ delete mode 100644 src/Test/L0/Listener/SelfUpdaterL0.cs
 
 diff --git a/src/Runner.Listener/SelfUpdater.cs b/src/Runner.Listener/SelfUpdater.cs
-index 7b74a5d..0b13df9 100644
+index 045edb3..79a5fd9 100644
 --- a/src/Runner.Listener/SelfUpdater.cs
 +++ b/src/Runner.Listener/SelfUpdater.cs
-@@ -62,6 +62,13 @@ namespace GitHub.Runner.Listener
- 
+@@ -68,6 +68,13 @@ namespace GitHub.Runner.Listener
                  Trace.Info($"An update is available.");
+                 _updateTrace.Add($"RunnerPlatform: {_targetPackage.Platform}");
  
 +                // disable self-updates
 +                var rustAvoidUnreachableCodeError = true;
@@ -26,7 +30,191 @@ index 7b74a5d..0b13df9 100644
 +
                  // Print console line that warn user not shutdown runner.
                  await UpdateRunnerUpdateStateAsync("Runner update in progress, do not shutdown runner.");
-                 await UpdateRunnerUpdateStateAsync($"Downloading {_targetPackage.Version} runner", $"RunnerPlatform: {_targetPackage.Platform}");
+                 await UpdateRunnerUpdateStateAsync($"Downloading {_targetPackage.Version} runner");
+diff --git a/src/Test/L0/Listener/SelfUpdaterL0.cs b/src/Test/L0/Listener/SelfUpdaterL0.cs
+deleted file mode 100644
+index 2ac6346..0000000
+--- a/src/Test/L0/Listener/SelfUpdaterL0.cs
++++ /dev/null
+@@ -1,178 +0,0 @@
+-﻿using GitHub.DistributedTask.WebApi;
+-using GitHub.Runner.Listener;
+-using GitHub.Runner.Sdk;
+-using Moq;
+-using System;
+-using System.Threading;
+-using System.Threading.Tasks;
+-using Xunit;
+-using System.IO;
+-
+-namespace GitHub.Runner.Common.Tests.Listener
+-{
+-    public sealed class SelfUpdaterL0
+-    {
+-        private Mock<IRunnerServer> _runnerServer;
+-        private Mock<ITerminal> _term;
+-        private Mock<IConfigurationStore> _configStore;
+-        private Mock<IJobDispatcher> _jobDispatcher;
+-        private AgentRefreshMessage _refreshMessage = new AgentRefreshMessage(1, "2.299.0");
+-
+-#if !OS_WINDOWS
+-        private string _packageUrl = $"https://github.com/actions/runner/releases/download/v2.285.1/actions-runner-{BuildConstants.RunnerPackage.PackageName}-2.285.1.tar.gz";
+-#else
+-        private string _packageUrl = $"https://github.com/actions/runner/releases/download/v2.285.1/actions-runner-{BuildConstants.RunnerPackage.PackageName}-2.285.1.zip";
+-#endif
+-        public SelfUpdaterL0()
+-        {
+-            _runnerServer = new Mock<IRunnerServer>();
+-            _term = new Mock<ITerminal>();
+-            _configStore = new Mock<IConfigurationStore>();
+-            _jobDispatcher = new Mock<IJobDispatcher>();
+-            _configStore.Setup(x => x.GetSettings()).Returns(new RunnerSettings() { PoolId = 1, AgentId = 1 });
+-
+-            _runnerServer.Setup(x => x.GetPackageAsync("agent", BuildConstants.RunnerPackage.PackageName, "2.299.0", true, It.IsAny<CancellationToken>()))
+-                         .Returns(Task.FromResult(new PackageMetadata() { Platform = BuildConstants.RunnerPackage.PackageName, Version = new PackageVersion("2.299.0"), DownloadUrl = _packageUrl }));
+-        }
+-
+-        [Fact]
+-        [Trait("Level", "L0")]
+-        [Trait("Category", "Runner")]
+-        public async void TestSelfUpdateAsync()
+-        {
+-            using (var hc = new TestHostContext(this))
+-            {
+-                //Arrange
+-                var updater = new Runner.Listener.SelfUpdater();
+-                hc.SetSingleton<ITerminal>(_term.Object);
+-                hc.SetSingleton<IRunnerServer>(_runnerServer.Object);
+-                hc.SetSingleton<IConfigurationStore>(_configStore.Object);
+-                hc.SetSingleton<IHttpClientHandlerFactory>(new HttpClientHandlerFactory());
+-
+-                var p = new ProcessInvokerWrapper();
+-                p.Initialize(hc);
+-                hc.EnqueueInstance<IProcessInvoker>(p);
+-                updater.Initialize(hc);
+-
+-                _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
+-                             .Callback((int p, int a, string s, string t) =>
+-                             {
+-                                 hc.GetTrace().Info(t);
+-                             })
+-                             .Returns(Task.FromResult(new TaskAgent()));
+-
+-                try
+-                {
+-                    var result = await updater.SelfUpdate(_refreshMessage, _jobDispatcher.Object, true, hc.RunnerShutdownToken);
+-                    Assert.True(result);
+-                    Assert.True(Directory.Exists(Path.Combine(hc.GetDirectory(WellKnownDirectory.Root), "bin.2.299.0")));
+-                    Assert.True(Directory.Exists(Path.Combine(hc.GetDirectory(WellKnownDirectory.Root), "externals.2.299.0")));
+-                }
+-                finally
+-                {
+-                    IOUtil.DeleteDirectory(Path.Combine(hc.GetDirectory(WellKnownDirectory.Root), "bin.2.299.0"), CancellationToken.None);
+-                    IOUtil.DeleteDirectory(Path.Combine(hc.GetDirectory(WellKnownDirectory.Root), "externals.2.299.0"), CancellationToken.None);
+-                }
+-            }
+-        }
+-
+-        [Fact]
+-        [Trait("Level", "L0")]
+-        [Trait("Category", "Runner")]
+-        public async void TestSelfUpdateAsync_NoUpdateOnOldVersion()
+-        {
+-            using (var hc = new TestHostContext(this))
+-            {
+-                //Arrange
+-                var updater = new Runner.Listener.SelfUpdater();
+-                hc.SetSingleton<ITerminal>(_term.Object);
+-                hc.SetSingleton<IRunnerServer>(_runnerServer.Object);
+-                hc.SetSingleton<IConfigurationStore>(_configStore.Object);
+-                updater.Initialize(hc);
+-
+-                _runnerServer.Setup(x => x.GetPackageAsync("agent", BuildConstants.RunnerPackage.PackageName, "2.200.0", true, It.IsAny<CancellationToken>()))
+-                         .Returns(Task.FromResult(new PackageMetadata() { Platform = BuildConstants.RunnerPackage.PackageName, Version = new PackageVersion("2.200.0"), DownloadUrl = _packageUrl }));
+-
+-                _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
+-                             .Callback((int p, int a, string s, string t) =>
+-                             {
+-                                 hc.GetTrace().Info(t);
+-                             })
+-                             .Returns(Task.FromResult(new TaskAgent()));
+-
+-                var result = await updater.SelfUpdate(new AgentRefreshMessage(1, "2.200.0"), _jobDispatcher.Object, true, hc.RunnerShutdownToken);
+-                Assert.False(result);
+-            }
+-        }
+-
+-        [Fact]
+-        [Trait("Level", "L0")]
+-        [Trait("Category", "Runner")]
+-        public async void TestSelfUpdateAsync_DownloadRetry()
+-        {
+-            using (var hc = new TestHostContext(this))
+-            {
+-                //Arrange
+-                var updater = new Runner.Listener.SelfUpdater();
+-                hc.SetSingleton<ITerminal>(_term.Object);
+-                hc.SetSingleton<IRunnerServer>(_runnerServer.Object);
+-                hc.SetSingleton<IConfigurationStore>(_configStore.Object);
+-                hc.SetSingleton<IHttpClientHandlerFactory>(new HttpClientHandlerFactory());
+-
+-                _runnerServer.Setup(x => x.GetPackageAsync("agent", BuildConstants.RunnerPackage.PackageName, "2.299.0", true, It.IsAny<CancellationToken>()))
+-                         .Returns(Task.FromResult(new PackageMetadata() { Platform = BuildConstants.RunnerPackage.PackageName, Version = new PackageVersion("2.299.0"), DownloadUrl = $"https://github.com/actions/runner/notexists" }));
+-
+-                var p = new ProcessInvokerWrapper();
+-                p.Initialize(hc);
+-                hc.EnqueueInstance<IProcessInvoker>(p);
+-                updater.Initialize(hc);
+-
+-                _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
+-                             .Callback((int p, int a, string s, string t) =>
+-                             {
+-                                 hc.GetTrace().Info(t);
+-                             })
+-                             .Returns(Task.FromResult(new TaskAgent()));
+-
+-
+-                var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => updater.SelfUpdate(_refreshMessage, _jobDispatcher.Object, true, hc.RunnerShutdownToken));
+-                Assert.Contains($"failed after {Constants.RunnerDownloadRetryMaxAttempts} download attempts", ex.Message);
+-            }
+-        }
+-
+-        [Fact]
+-        [Trait("Level", "L0")]
+-        [Trait("Category", "Runner")]
+-        public async void TestSelfUpdateAsync_ValidateHash()
+-        {
+-            using (var hc = new TestHostContext(this))
+-            {
+-                //Arrange
+-                var updater = new Runner.Listener.SelfUpdater();
+-                hc.SetSingleton<ITerminal>(_term.Object);
+-                hc.SetSingleton<IRunnerServer>(_runnerServer.Object);
+-                hc.SetSingleton<IConfigurationStore>(_configStore.Object);
+-                hc.SetSingleton<IHttpClientHandlerFactory>(new HttpClientHandlerFactory());
+-
+-                _runnerServer.Setup(x => x.GetPackageAsync("agent", BuildConstants.RunnerPackage.PackageName, "2.299.0", true, It.IsAny<CancellationToken>()))
+-                         .Returns(Task.FromResult(new PackageMetadata() { Platform = BuildConstants.RunnerPackage.PackageName, Version = new PackageVersion("2.299.0"), DownloadUrl = _packageUrl, HashValue = "bad_hash" }));
+-
+-                var p = new ProcessInvokerWrapper();
+-                p.Initialize(hc);
+-                hc.EnqueueInstance<IProcessInvoker>(p);
+-                updater.Initialize(hc);
+-
+-                _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
+-                             .Callback((int p, int a, string s, string t) =>
+-                             {
+-                                 hc.GetTrace().Info(t);
+-                             })
+-                             .Returns(Task.FromResult(new TaskAgent()));
+-
+-
+-                var ex = await Assert.ThrowsAsync<Exception>(() => updater.SelfUpdate(_refreshMessage, _jobDispatcher.Object, true, hc.RunnerShutdownToken));
+-                Assert.Contains("did not match expected Runner Hash", ex.Message);
+-            }
+-        }
+-    }
+-}
 -- 
 2.34.1
 
