@@ -1,4 +1,4 @@
-From 198e52f75c1fa4b2b5cd6a632350d1f8f1778182 Mon Sep 17 00:00:00 2001
+From b89fc32f94cc339c0fa94f28cfc2800f37ffdecc Mon Sep 17 00:00:00 2001
 From: Michael Zimmermann <sigmaepsilon92@gmail.com>
 Date: Wed, 26 May 2021 22:30:40 +0200
 Subject: [PATCH 1/2] add support for workerBinary configuration
@@ -43,7 +43,7 @@ index ca526c7..ab51a5c 100644
          public bool IsHostedServer
          {
 diff --git a/src/Runner.Common/Constants.cs b/src/Runner.Common/Constants.cs
-index 829c822..4a092ad 100644
+index b41c2e5..98a1ce5 100644
 --- a/src/Runner.Common/Constants.cs
 +++ b/src/Runner.Common/Constants.cs
 @@ -99,6 +99,7 @@ namespace GitHub.Runner.Common
@@ -81,7 +81,7 @@ index de268d8..dc03bb0 100644
          public string GetStartupType()
          {
 diff --git a/src/Runner.Listener/Configuration/ConfigurationManager.cs b/src/Runner.Listener/Configuration/ConfigurationManager.cs
-index 826a603..461e8e7 100644
+index 34b8e99..ff51064 100644
 --- a/src/Runner.Listener/Configuration/ConfigurationManager.cs
 +++ b/src/Runner.Listener/Configuration/ConfigurationManager.cs
 @@ -330,6 +330,8 @@ namespace GitHub.Runner.Listener.Configuration
@@ -94,7 +94,7 @@ index 826a603..461e8e7 100644
  
              _term.WriteLine();
 diff --git a/src/Runner.Listener/JobDispatcher.cs b/src/Runner.Listener/JobDispatcher.cs
-index 7b75c72..995026d 100644
+index 7913c92..e1731d4 100644
 --- a/src/Runner.Listener/JobDispatcher.cs
 +++ b/src/Runner.Listener/JobDispatcher.cs
 @@ -42,6 +42,7 @@ namespace GitHub.Runner.Listener
@@ -124,5 +124,5 @@ index 7b75c72..995026d 100644
                                      workingDirectory: assemblyDirectory,
                                      fileName: workerFileName,
 -- 
-2.34.1
+2.35.1
 

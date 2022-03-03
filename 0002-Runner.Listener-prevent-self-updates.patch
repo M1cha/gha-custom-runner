@@ -1,4 +1,4 @@
-From 428bf361a9bd689dca92b32ca4b656da6748b01b Mon Sep 17 00:00:00 2001
+From 6e39f875a95699329cbd7336bda66b6549398d07 Mon Sep 17 00:00:00 2001
 From: Pietro Albini <pietro@pietroalbini.org>
 Date: Fri, 31 Jan 2020 11:02:34 +0100
 Subject: [PATCH 2/2] Runner.Listener: prevent self-updates
@@ -9,15 +9,15 @@ enough.
 This also removes SelfUpdater tests because they would fail.
 ---
  src/Runner.Listener/SelfUpdater.cs    |   7 +
- src/Test/L0/Listener/SelfUpdaterL0.cs | 786 --------------------------
- 2 files changed, 7 insertions(+), 786 deletions(-)
+ src/Test/L0/Listener/SelfUpdaterL0.cs | 793 --------------------------
+ 2 files changed, 7 insertions(+), 793 deletions(-)
  delete mode 100644 src/Test/L0/Listener/SelfUpdaterL0.cs
 
 diff --git a/src/Runner.Listener/SelfUpdater.cs b/src/Runner.Listener/SelfUpdater.cs
-index e2f0b2b..e120491 100644
+index 81e2d1d..47fd786 100644
 --- a/src/Runner.Listener/SelfUpdater.cs
 +++ b/src/Runner.Listener/SelfUpdater.cs
-@@ -82,6 +82,13 @@ namespace GitHub.Runner.Listener
+@@ -83,6 +83,13 @@ namespace GitHub.Runner.Listener
                  Trace.Info($"An update is available.");
                  _updateTrace.Enqueue($"RunnerPlatform: {_targetPackage.Platform}");
  
@@ -33,10 +33,10 @@ index e2f0b2b..e120491 100644
                  await UpdateRunnerUpdateStateAsync($"Downloading {_targetPackage.Version} runner");
 diff --git a/src/Test/L0/Listener/SelfUpdaterL0.cs b/src/Test/L0/Listener/SelfUpdaterL0.cs
 deleted file mode 100644
-index ff0dc9a..0000000
+index dbf8d22..0000000
 --- a/src/Test/L0/Listener/SelfUpdaterL0.cs
 +++ /dev/null
-@@ -1,786 +0,0 @@
+@@ -1,793 +0,0 @@
 -﻿using System;
 -using System.Collections.Generic;
 -using System.IO;
@@ -813,7 +813,14 @@ index ff0dc9a..0000000
 -
 -                    var traceFile = Path.GetTempFileName();
 -                    File.Copy(hc.TraceFileName, traceFile, true);
--                    Assert.Contains("Something wrong with the trimmed runner package, failback to use the full package for runner updates", File.ReadAllText(traceFile));
+-                    if (File.ReadAllText(traceFile).Contains("Use trimmed (runtime+externals) package"))
+-                    {
+-                        Assert.Contains("Something wrong with the trimmed runner package, failback to use the full package for runner updates", File.ReadAllText(traceFile));
+-                    }
+-                    else
+-                    {
+-                        hc.GetTrace().Warning("Skipping the 'TestSelfUpdateAsync_FallbackToFullPackage' test, as the `externals` or `runtime` hashes have been updated");
+-                    }
 -                }
 -            }
 -            finally
@@ -824,5 +831,5 @@ index ff0dc9a..0000000
 -    }
 -}
 -- 
-2.34.1
+2.35.1
 
