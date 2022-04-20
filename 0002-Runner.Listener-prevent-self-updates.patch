@@ -1,4 +1,4 @@
-From 6e39f875a95699329cbd7336bda66b6549398d07 Mon Sep 17 00:00:00 2001
+From 0b0099fd2e100bc4201f12620373e9ddec0c0502 Mon Sep 17 00:00:00 2001
 From: Pietro Albini <pietro@pietroalbini.org>
 Date: Fri, 31 Jan 2020 11:02:34 +0100
 Subject: [PATCH 2/2] Runner.Listener: prevent self-updates
