@@ -1,4 +1,4 @@
-From 0b0099fd2e100bc4201f12620373e9ddec0c0502 Mon Sep 17 00:00:00 2001
+From 1a8c49baaf05fd365838fda3f4a7a57cfd754cf0 Mon Sep 17 00:00:00 2001
 From: Pietro Albini <pietro@pietroalbini.org>
 Date: Fri, 31 Jan 2020 11:02:34 +0100
 Subject: [PATCH 2/2] Runner.Listener: prevent self-updates
@@ -9,8 +9,8 @@ enough.
 This also removes SelfUpdater tests because they would fail.
 ---
  src/Runner.Listener/SelfUpdater.cs    |   7 +
- src/Test/L0/Listener/SelfUpdaterL0.cs | 793 --------------------------
- 2 files changed, 7 insertions(+), 793 deletions(-)
+ src/Test/L0/Listener/SelfUpdaterL0.cs | 799 --------------------------
+ 2 files changed, 7 insertions(+), 799 deletions(-)
  delete mode 100644 src/Test/L0/Listener/SelfUpdaterL0.cs
 
 diff --git a/src/Runner.Listener/SelfUpdater.cs b/src/Runner.Listener/SelfUpdater.cs
@@ -33,11 +33,12 @@ index 81e2d1d..47fd786 100644
                  await UpdateRunnerUpdateStateAsync($"Downloading {_targetPackage.Version} runner");
 diff --git a/src/Test/L0/Listener/SelfUpdaterL0.cs b/src/Test/L0/Listener/SelfUpdaterL0.cs
 deleted file mode 100644
-index dbf8d22..0000000
+index d67cf11..0000000
 --- a/src/Test/L0/Listener/SelfUpdaterL0.cs
 +++ /dev/null
-@@ -1,793 +0,0 @@
--﻿using System;
+@@ -1,799 +0,0 @@
+-﻿#if !(OS_OSX && ARM64)
+-using System;
 -using System.Collections.Generic;
 -using System.IO;
 -using System.Linq;
@@ -89,9 +90,9 @@ index dbf8d22..0000000
 -                var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "https://github.com/actions/runner/releases/latest"));
 -                if (response.StatusCode == System.Net.HttpStatusCode.Redirect)
 -                {
--                    var redirect = await response.Content.ReadAsStringAsync();
+-                    var redirectUrl = response.Headers.Location.ToString();
 -                    Regex regex = new Regex(@"/runner/releases/tag/v(?<version>\d+\.\d+\.\d+)");
--                    var match = regex.Match(redirect);
+-                    var match = regex.Match(redirectUrl);
 -                    if (match.Success)
 -                    {
 -                        latestVersion = match.Groups["version"].Value;
@@ -101,6 +102,10 @@ index dbf8d22..0000000
 -#else
 -                        _packageUrl = $"https://github.com/actions/runner/releases/download/v{latestVersion}/actions-runner-{BuildConstants.RunnerPackage.PackageName}-{latestVersion}.zip";
 -#endif
+-                    }
+-                    else
+-                    {
+-                        throw new Exception("The latest runner version could not be determined so a download URL could not be generated for it. Please check the location header of the redirect response of 'https://github.com/actions/runner/releases/latest'");
 -                    }
 -                }
 -            }
@@ -830,6 +835,7 @@ index dbf8d22..0000000
 -        }
 -    }
 -}
+-#endif
 -- 
 2.35.1
 

@@ -1,4 +1,4 @@
-From edd9028ebb34011fb7d9f0b98495b1f8e43aba6b Mon Sep 17 00:00:00 2001
+From 747f9a365141d93ca16ae2c4d1889eec345d5277 Mon Sep 17 00:00:00 2001
 From: Michael Zimmermann <sigmaepsilon92@gmail.com>
 Date: Wed, 26 May 2021 22:30:40 +0200
 Subject: [PATCH 1/2] add support for workerBinary configuration
