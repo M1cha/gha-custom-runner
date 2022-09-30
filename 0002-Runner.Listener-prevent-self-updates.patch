@@ -1,4 +1,4 @@
-From 1a8c49baaf05fd365838fda3f4a7a57cfd754cf0 Mon Sep 17 00:00:00 2001
+From 128c32015c4e49b22e293fadb1c68e547c3fcee6 Mon Sep 17 00:00:00 2001
 From: Pietro Albini <pietro@pietroalbini.org>
 Date: Fri, 31 Jan 2020 11:02:34 +0100
 Subject: [PATCH 2/2] Runner.Listener: prevent self-updates
@@ -14,7 +14,7 @@ This also removes SelfUpdater tests because they would fail.
  delete mode 100644 src/Test/L0/Listener/SelfUpdaterL0.cs
 
 diff --git a/src/Runner.Listener/SelfUpdater.cs b/src/Runner.Listener/SelfUpdater.cs
-index 81e2d1d..47fd786 100644
+index 3c82424..a743336 100644
 --- a/src/Runner.Listener/SelfUpdater.cs
 +++ b/src/Runner.Listener/SelfUpdater.cs
 @@ -83,6 +83,13 @@ namespace GitHub.Runner.Listener
@@ -33,11 +33,11 @@ index 81e2d1d..47fd786 100644
                  await UpdateRunnerUpdateStateAsync($"Downloading {_targetPackage.Version} runner");
 diff --git a/src/Test/L0/Listener/SelfUpdaterL0.cs b/src/Test/L0/Listener/SelfUpdaterL0.cs
 deleted file mode 100644
-index d67cf11..0000000
+index 43afdae..0000000
 --- a/src/Test/L0/Listener/SelfUpdaterL0.cs
 +++ /dev/null
 @@ -1,799 +0,0 @@
--﻿#if !(OS_OSX && ARM64)
+-#if !(OS_WINDOWS && ARM64)
 -using System;
 -using System.Collections.Generic;
 -using System.IO;
@@ -837,5 +837,5 @@ index d67cf11..0000000
 -}
 -#endif
 -- 
-2.35.1
+2.37.2
 
