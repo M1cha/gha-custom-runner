@@ -1,4 +1,4 @@
-From 6a9f94b72b8080196b72294f1ae2219eb276eddd Mon Sep 17 00:00:00 2001
+From 00d59e4de817851867d599723e2cac4c6ead4a72 Mon Sep 17 00:00:00 2001
 From: Pietro Albini <pietro@pietroalbini.org>
 Date: Fri, 31 Jan 2020 11:02:34 +0100
 Subject: [PATCH 2/2] Runner.Listener: prevent self-updates
@@ -14,7 +14,7 @@ This also removes SelfUpdater tests because they would fail.
  delete mode 100644 src/Test/L0/Listener/SelfUpdaterL0.cs
 
 diff --git a/src/Runner.Listener/SelfUpdater.cs b/src/Runner.Listener/SelfUpdater.cs
-index 23ba0a0c..709fbd08 100644
+index 3f97b225..5b870bc3 100644
 --- a/src/Runner.Listener/SelfUpdater.cs
 +++ b/src/Runner.Listener/SelfUpdater.cs
 @@ -83,6 +83,13 @@ namespace GitHub.Runner.Listener
@@ -33,11 +33,11 @@ index 23ba0a0c..709fbd08 100644
                  await UpdateRunnerUpdateStateAsync($"Downloading {_targetPackage.Version} runner");
 diff --git a/src/Test/L0/Listener/SelfUpdaterL0.cs b/src/Test/L0/Listener/SelfUpdaterL0.cs
 deleted file mode 100644
-index 2bbdf6b4..00000000
+index c8383f5f..00000000
 --- a/src/Test/L0/Listener/SelfUpdaterL0.cs
 +++ /dev/null
 @@ -1,799 +0,0 @@
--#if !(OS_WINDOWS && ARM64)
+-﻿#if !(OS_WINDOWS && ARM64)
 -using System;
 -using System.Collections.Generic;
 -using System.IO;
@@ -156,7 +156,7 @@ index 2bbdf6b4..00000000
 -                    updater.Initialize(hc);
 -
 -                    _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
--                                 .Callback((int p, int a, string s, string t) =>
+-                                 .Callback((int p, ulong a, string s, string t) =>
 -                                 {
 -                                     hc.GetTrace().Info(t);
 -                                 })
@@ -219,7 +219,7 @@ index 2bbdf6b4..00000000
 -                             .Returns(Task.FromResult(new PackageMetadata() { Platform = BuildConstants.RunnerPackage.PackageName, Version = new PackageVersion("2.200.0"), DownloadUrl = _packageUrl }));
 -
 -                    _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
--                                 .Callback((int p, int a, string s, string t) =>
+-                                 .Callback((int p, ulong a, string s, string t) =>
 -                                 {
 -                                     hc.GetTrace().Info(t);
 -                                 })
@@ -273,7 +273,7 @@ index 2bbdf6b4..00000000
 -                    updater.Initialize(hc);
 -
 -                    _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
--                                 .Callback((int p, int a, string s, string t) =>
+-                                 .Callback((int p, ulong a, string s, string t) =>
 -                                 {
 -                                     hc.GetTrace().Info(t);
 -                                 })
@@ -328,7 +328,7 @@ index 2bbdf6b4..00000000
 -                    updater.Initialize(hc);
 -
 -                    _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
--                                 .Callback((int p, int a, string s, string t) =>
+-                                 .Callback((int p, ulong a, string s, string t) =>
 -                                 {
 -                                     hc.GetTrace().Info(t);
 -                                 })
@@ -383,7 +383,7 @@ index 2bbdf6b4..00000000
 -                         .Returns(Task.FromResult(new PackageMetadata() { Platform = BuildConstants.RunnerPackage.PackageName, Version = new PackageVersion("2.999.0"), DownloadUrl = _packageUrl, TrimmedPackages = new List<TrimmedPackageMetadata>() { new TrimmedPackageMetadata() } }));
 -
 -                    _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
--                                 .Callback((int p, int a, string s, string t) =>
+-                                 .Callback((int p, ulong a, string s, string t) =>
 -                                 {
 -                                     hc.GetTrace().Info(t);
 -                                 })
@@ -455,7 +455,7 @@ index 2bbdf6b4..00000000
 -                    updater.Initialize(hc);
 -
 -                    _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
--                                 .Callback((int p, int a, string s, string t) =>
+-                                 .Callback((int p, ulong a, string s, string t) =>
 -                                 {
 -                                     hc.GetTrace().Info(t);
 -                                 })
@@ -529,7 +529,7 @@ index 2bbdf6b4..00000000
 -                         .Returns(Task.FromResult(new PackageMetadata() { Platform = BuildConstants.RunnerPackage.PackageName, Version = new PackageVersion("2.999.0"), DownloadUrl = _packageUrl, TrimmedPackages = trim }));
 -
 -                    _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
--                                 .Callback((int p, int a, string s, string t) =>
+-                                 .Callback((int p, ulong a, string s, string t) =>
 -                                 {
 -                                     hc.GetTrace().Info(t);
 -                                 })
@@ -618,7 +618,7 @@ index 2bbdf6b4..00000000
 -                         .Returns(Task.FromResult(new PackageMetadata() { Platform = BuildConstants.RunnerPackage.PackageName, Version = new PackageVersion("2.999.0"), DownloadUrl = _packageUrl, TrimmedPackages = trim }));
 -
 -                    _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
--                                 .Callback((int p, int a, string s, string t) =>
+-                                 .Callback((int p, ulong a, string s, string t) =>
 -                                 {
 -                                     hc.GetTrace().Info(t);
 -                                 })
@@ -720,7 +720,7 @@ index 2bbdf6b4..00000000
 -
 -
 -                    _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
--                                 .Callback((int p, int a, string s, string t) =>
+-                                 .Callback((int p, ulong a, string s, string t) =>
 -                                 {
 -                                     hc.GetTrace().Info(t);
 -                                 })
@@ -797,7 +797,7 @@ index 2bbdf6b4..00000000
 -                         .Returns(Task.FromResult(new PackageMetadata() { Platform = BuildConstants.RunnerPackage.PackageName, Version = new PackageVersion("2.999.0"), DownloadUrl = _packageUrl, TrimmedPackages = trim }));
 -
 -                    _runnerServer.Setup(x => x.UpdateAgentUpdateStateAsync(1, 1, It.IsAny<string>(), It.IsAny<string>()))
--                                 .Callback((int p, int a, string s, string t) =>
+-                                 .Callback((int p, ulong a, string s, string t) =>
 -                                 {
 -                                     hc.GetTrace().Info(t);
 -                                 })
@@ -837,5 +837,5 @@ index 2bbdf6b4..00000000
 -}
 -#endif
 -- 
-2.37.2
+2.41.0
 
